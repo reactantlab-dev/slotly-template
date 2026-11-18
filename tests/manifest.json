@@ -1,0 +1,13 @@
+{
+  "$comment": "Grading order. A PR for ticket X runs 'scaffold' plus every ticket up to and including X. Without a ticket only 'scaffold' runs; --all runs everything. Paths are relative to the repo root.",
+  "suites": [
+    { "id": "scaffold", "api": ["tests/api/scaffold.test.ts"], "ui": ["tests/ui/scaffold.spec.ts"] },
+    { "id": "SLOT-101", "api": ["tests/api/slot-101.test.ts"], "ui": ["tests/ui/slot-101.spec.ts"] },
+    { "id": "SLOT-102", "api": ["tests/api/slot-102.test.ts"], "ui": ["tests/ui/slot-102.spec.ts"] },
+    { "id": "SLOT-103", "api": ["tests/api/slot-103.test.ts"], "ui": ["tests/ui/slot-103.spec.ts"] },
+    { "id": "SLOT-201", "api": ["tests/api/slot-201.test.ts"], "ui": ["tests/ui/slot-201.spec.ts"] },
+    { "id": "SLOT-202", "api": ["tests/api/slot-202.test.ts"], "ui": ["tests/ui/slot-202.spec.ts"] },
+    { "id": "SLOT-203", "api": ["tests/api/slot-203.test.ts"], "ui": ["tests/ui/slot-203.spec.ts"] }
+  ],
+  "tickets": ["SLOT-101", "SLOT-102", "SLOT-103", "SLOT-201", "SLOT-202", "SLOT-203"]
+}

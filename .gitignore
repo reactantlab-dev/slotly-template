@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+# local database
+data/
+# env files (only .env.example is committed)
+.env*
+!.env.example
+# test output
+test-results/
+playwright-report/
+coverage/
+.DS_Store
+/.grade-results/
+/grade-report.json
