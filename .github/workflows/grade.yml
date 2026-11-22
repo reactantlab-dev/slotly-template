@@ -1,0 +1,104 @@
+name: grade
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ticket:
+        description: "Ticket to grade: runs scaffold plus every ticket up to it (SLOT-203 = all current suites). Empty = scaffold only."
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grade-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  grade:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      GRADE_TICKET: ${{ inputs.ticket }}
+      # Fallback when the branch name has no ticket number. Passed as env, never interpolated into scripts.
+      GRADE_PR_TITLE: ${{ github.event.pull_request.title }}
+      GRADE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      # The PR that started the run, for the report. Empty on manual runs, which report no pull_request.
+      GRADE_PR_NUMBER: ${{ github.event.pull_request.number }}
+      GRADE_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      GRADE_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Start grading deadline
+        run: echo "GRADE_JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Tests, grading config and dependencies always come from the base branch, never from the PR.
+      - name: Restore tests, grading config and dependencies from base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git checkout "$BASE_SHA" -- tests scripts/grade.mjs vitest.config.ts playwright.config.ts package.json package-lock.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # No lifecycle scripts run: neither the project's own (preinstall, postinstall, prepare) nor dependencies'.
+      - name: Install dependencies without install scripts
+        run: npm ci --ignore-scripts
+
+      # better-sqlite3 ships prebuilt binaries and needs no install script; fail early if the binary cannot load.
+      - name: Check native modules
+        run: node -e "new (require('better-sqlite3'))(':memory:').close()"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Cache Next.js build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      # Fresh SQLite database (migrate + seed), production build, then API and UI suites.
+      - name: Run grading suites
+        run: node scripts/grade.mjs
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload grade report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: grade-report
+          path: grade-report.json
+          retention-days: 7
+          if-no-files-found: error

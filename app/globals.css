@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Design tokens. Use these utilities (bg-surface, text-ink, …) instead of raw colors. */
+@theme {
+  --color-canvas: oklch(97.5% 0.012 75);
+  --color-surface: oklch(99.5% 0.004 75);
+  --color-ink: oklch(22% 0.02 40);
+  --color-ink-muted: oklch(48% 0.02 40);
+  --color-line: oklch(89% 0.015 70);
+  --color-accent: oklch(55% 0.13 40);
+  --color-accent-strong: oklch(46% 0.13 38);
+  --color-accent-soft: oklch(93% 0.035 50);
+  --color-success: oklch(52% 0.11 155);
+  --color-success-soft: oklch(95% 0.035 155);
+  --color-danger: oklch(52% 0.17 25);
+  --color-danger-soft: oklch(95% 0.03 25);
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-control: 0.625rem;
+  --radius-panel: 1.25rem;
+
+  --shadow-panel: 0 1px 0 oklch(89% 0.015 70), 0 12px 32px -18px oklch(30% 0.05 40 / 0.35);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
