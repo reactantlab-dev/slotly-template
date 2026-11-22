@@ -23,3 +23,4 @@ First `npm test` only: `npx playwright install chromium` (browser for UI tests).
 ## Workflow
 
 One branch and one pull request per ticket (`slot-102-free-slots`). The `grade` check runs the tests for your ticket and all earlier ones; it must be green before review.
+
